@@ -1,30 +1,29 @@
 package kr.co.lion.android01.navermapuse
 
 import android.Manifest
+import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import androidx.core.app.ActivityCompat
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraAnimation
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
-import com.naver.maps.map.CameraUpdateParams
 import com.naver.maps.map.LocationTrackingMode
 import com.naver.maps.map.MapFragment
 import com.naver.maps.map.NaverMap
 import com.naver.maps.map.NaverMapSdk
-import com.naver.maps.map.OnMapReadyCallback
-import com.naver.maps.map.UiSettings
+import com.naver.maps.map.overlay.Marker
 import com.naver.maps.map.util.FusedLocationSource
 import kr.co.lion.android01.navermapuse.databinding.ActivityMainBinding
 
-class MainActivity : AppCompatActivity() , OnMapReadyCallback {
+class MainActivity : AppCompatActivity()  {
 
     lateinit var activityMainBinding: ActivityMainBinding
 
@@ -48,6 +47,8 @@ class MainActivity : AppCompatActivity() , OnMapReadyCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+
         activityMainBinding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(activityMainBinding.root)
 
@@ -56,8 +57,6 @@ class MainActivity : AppCompatActivity() , OnMapReadyCallback {
 
         setToolBar()
         setNaverMap()
-
-
 
         NaverMapSdk.getInstance(this).client =
             NaverMapSdk.NaverCloudPlatformClient("knvgeuyz96")
@@ -100,7 +99,26 @@ class MainActivity : AppCompatActivity() , OnMapReadyCallback {
             //네이버 객체를 담아준다
             naverMap = it
 
-            naverMap.locationTrackingMode = LocationTrackingMode.Follow
+            locationSource = FusedLocationSource(this, LOCATION_PERMISSION_REQUEST_CODE)
+
+            naverMap.locationSource = locationSource
+            naverMap.uiSettings.isLocationButtonEnabled = true
+            naverMap.locationTrackingMode = LocationTrackingMode.Face
+
+            //맵을 클릭했을때
+            naverMap.setOnMapClickListener { point, latLng ->
+                var dialog = MaterialAlertDialogBuilder(this)
+                dialog.setTitle("지점 표시")
+                dialog.setMessage("이 지점을 표시하시겠습니까?")
+                dialog.setPositiveButton("확인"){ dialogInterface: DialogInterface, i: Int ->
+                    //마커 추가
+                    val maker = Marker()
+                    maker.position = latLng
+                    maker.map = naverMap
+                }
+                dialog.setNegativeButton("취소", null)
+                dialog.show()
+            }
 
             //위치 정보를 관리하는 객체를 가져온다
             locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
@@ -182,10 +200,8 @@ class MainActivity : AppCompatActivity() , OnMapReadyCallback {
 
     }
 
-    override fun onMapReady(naverMap: NaverMap) {
-        this.naverMap = naverMap
-        naverMap.uiSettings.isLocationButtonEnabled = true
-        naverMap.locationTrackingMode = LocationTrackingMode.Follow
+    companion object{
+        val LOCATION_PERMISSION_REQUEST_CODE = 1000
     }
 
 }
